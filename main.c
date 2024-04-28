@@ -16,15 +16,18 @@
 #include "esp_netif.h"
 #include "mqtt_client.h"
 #include "minimal_wifi.h"
+
 //Initial Pin Definitions
 #define CS_GPIO 5
 #define MOSI_GPIO 4
 #define SCLK_GPIO 18
 #define ADC_CHANNEL ADC_CHANNEL_1
+
 //Wifi Setup
 #define WIFI_SSID      "Tufts_Wireless"
 #define WIFI_PASS      ""
 #define BROKER_URI "mqtt://en1-pi.eecs.tufts.edu"
+
 void app_main(){
     // Configure the ADC ----------------------------------------------------------------
     adc_oneshot_unit_init_cfg_t adc1_init_cfg = {
@@ -38,6 +41,7 @@ void app_main(){
         .atten = ADC_ATTEN_DB_11
     };
     adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL, &adc1_cfg);
+   
     //Temperature IC Setup ----------------------------------------------------------------
     esp_err_t ret;
     spi_device_handle_t spi;
@@ -50,6 +54,7 @@ void app_main(){
         .quadhd_io_num = -1,
         .max_transfer_sz = 32
     };
+    
     //Setup TMP126
     spi_device_interface_config_t devcfg={
         .clock_speed_hz = 1000*1000,
@@ -59,11 +64,13 @@ void app_main(){
         .queue_size = 1,
         .command_bits = 16
     };
+    
     //Initialize SPI bus
     ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);
     ESP_ERROR_CHECK(ret);
     ret = spi_bus_add_device(SPI2_HOST, &devcfg, &spi);
     ESP_ERROR_CHECK(ret);
+    
     //Temperature IC Read
     esp_err_t ret;
     spi_transaction_t t;
@@ -78,12 +85,15 @@ void app_main(){
     assert(ret == ESP_OK);
     uint16_t rx_buffer_real = rx_buffer[0]*256 + rx_buffer[1];
     rx_buffer_real = (rx_buffer_real >> 2);
+    
     //Save it in a register
     //...
+    
     //Read Battery
     float adc_raw;
     adc_oneshot_read(adc1_handle, ADC_CHANNEL, &adc_raw);
     float battery = adc_raw*2; //Placeholder expression
+    
     //Wifi Setup ----------------------------------------------------------------
     esp_err_t ret2 = nvs_flash_init();
     if (ret2 == ESP_ERR_NVS_NO_FREE_PAGES || ret2 == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -99,15 +109,19 @@ void app_main(){
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_start(client);
     //int msg_id = esp_mqtt_client_subscribe(client, "/time/qos1", 1);
+    
     //Subscribe to Time Topic
     int timestamp = esp_mqtt_client_subscribe(client, "time", 1);
+    
     //Construct Message
     //format: timestamp,temperature,battery
     char message[23];
     sprintf(message, "%d,%f,%f", timestamp, 0.03125*rx_buffer_real, battery);
+    
     //Publish to MQTT
     printf("Sending MQTT message in 5 seconds...");
     esp_mqtt_client_publish(client, "teamI/node1/tempupdate", message, 23, 0, 1);
+    
     //Enter Deep Sleep (for x seconds)
     esp_sleep_enable_timer_wakeup(1800000000);
     esp_deep_sleep_start();
