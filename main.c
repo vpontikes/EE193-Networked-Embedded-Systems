@@ -118,10 +118,12 @@ void app_main(){
     //format: timestamp,temperature,battery
     char message[23];
     sprintf(message, "%d,%f,%f", timestamp, 0.03125*rx_buffer_real, battery);
+    sprintf(battery_message, "{units: V}");
     
     //Publish to MQTT
     printf("Sending MQTT message in 5 seconds...");
     esp_mqtt_client_publish(client, "teamI/node1/tempupdate", message, 23, 0, 1);
+    esp_mqtt_client_publish(client, "teamI/node1/properties", message, 10, 0, 1);
     
     //Enter Deep Sleep (for x seconds)
     esp_sleep_enable_timer_wakeup(1800000000);
