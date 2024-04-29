@@ -18,10 +18,11 @@
 #include "minimal_wifi.h"
 
 //Initial Pin Definitions
-#define CS_GPIO 5
-#define MOSI_GPIO 4
-#define SCLK_GPIO 18
-#define ADC_CHANNEL ADC_CHANNEL_1
+#define CS_GPIO 1
+#define MOSI_GPIO 3 //MISO is 19
+//ALERT is GPIO 6
+#define SCLK_GPIO 7
+#define ADC_CHANNEL ADC_CHANNEL_0 //multiply voltage by 2 because of divider
 
 //Wifi Setup
 #define WIFI_SSID      "Tufts_Wireless"
@@ -92,7 +93,7 @@ void app_main(){
     //Read Battery
     float adc_raw;
     adc_oneshot_read(adc1_handle, ADC_CHANNEL, &adc_raw);
-    float battery = adc_raw*2; //Placeholder expression
+    float battery = adc_raw*2;
     
     //Wifi Setup ----------------------------------------------------------------
     esp_err_t ret2 = nvs_flash_init();
